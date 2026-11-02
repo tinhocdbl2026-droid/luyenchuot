@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Master - Thử Thách Bậc Thầy Chuột 10 Màn Chơi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Audio Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .pulse-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pulse-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+        .level-card {
+            transition: all 0.2s ease;
+        }
+        .level-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden select-none bg-slate-950 text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="glass-panel px-6 py-3 flex justify-between items-center z-20 border-b border-slate-800">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showMenu()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-mouse-pointer text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black font-orbitron tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                    MOUSE MASTER
+                </h1>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">10 Thử Thách Kỹ Năng Chuột</p>
+            </div>
+        </div>
+
+        <!-- Live Scoreboard HUD -->
+        <div class="flex items-center space-x-6 bg-slate-900/90 px-6 py-2 rounded-2xl border border-slate-800 shadow-inner">
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Màn Chơi</div>
+                <div id="hud-level" class="text-xl font-black font-orbitron text-purple-400">1/10</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Điểm Số</div>
+                <div id="hud-score" class="text-2xl font-black font-orbitron text-blue-400">0</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Combo</div>
+                <div id="hud-combo" class="text-2xl font-black font-orbitron text-amber-400">x1</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Thời Gian</div>
+                <div id="hud-timer" class="text-2xl font-black font-orbitron text-emerald-400">30s</div>
+            </div>
+        </div>
+
+        <!-- Controls / Audio Toggle -->
+        <div class="flex items-center space-x-3">
+            <button id="btn-sound" class="p-3 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-xl border border-slate-700 transition">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <button onclick="showMenu()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition flex items-center gap-2">
+                <i class="fa-solid fa-list"></i>
+                <span>Chọn Màn</span>
+            </button>
+            <button id="btn-restart" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-rose-900/30 transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Chơi Lại</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden">
+        <!-- Interactive Game Canvas -->
+        <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+        <!-- Dynamic Game Mode Floating Info Banner -->
+        <div id="mode-info" class="absolute top-4 left-1/2 -translate-x-1/2 glass-panel px-6 py-2.5 rounded-full border border-blue-500/40 text-center pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4 z-10 max-w-xl">
+            <h2 id="mode-title" class="text-lg font-bold font-orbitron text-blue-300">Tên Màn Chơi</h2>
+            <p id="mode-instruction" class="text-xs text-slate-300 font-medium">Hướng dẫn thao tác chuột...</p>
+        </div>
+
+        <!-- Main Menu & Level Select Overlay -->
+        <div id="modal-menu" class="absolute inset-0 glass-panel bg-slate-950/95 z-30 flex items-center justify-center p-6">
+            <div class="max-w-4xl w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl text-center flex flex-col max-h-[90vh]">
+                
+                <div class="mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/20 mb-3">
+                        <i class="fa-solid fa-gamepad text-3xl text-white"></i>
+                    </div>
+                    <h2 class="text-3xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                        CHỌN MÀN CHƠI THAO TÁC CHUỘT
+                    </h2>
+                    <p class="text-slate-400 text-xs mt-1">Luyện tập kỹ năng chuột toàn diện: Nhấp chuột, Nháy đúp, Chuột phải, Di chuột, Kéo thả & Cuộn chuột!</p>
+                </div>
+
+                <!-- 10 Level Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 overflow-y-auto custom-scrollbar p-2 mb-4 text-left flex-1">
+                    <!-- Level 1 -->
+                    <div onclick="selectLevel(1)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-blue-400 font-orbitron mb-1">MÀN 1</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-arrow-pointer text-blue-400"></i> Nhấp Chuột Trái</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Bắn tiêu điểm di động với độ chính xác cao.</p>
+                    </div>
+
+                    <!-- Level 2 -->
+                    <div onclick="selectLevel(2)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-purple-400 font-orbitron mb-1">MÀN 2</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-mouse text-purple-400"></i> Nhấp Chuột Phải</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Phản xạ nhanh bấm chuột phải chính xác.</p>
+                    </div>
+
+                    <!-- Level 3 -->
+                    <div onclick="selectLevel(3)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-pink-400 font-orbitron mb-1">MÀN 3</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-folder-open text-pink-400"></i> Nháy Đúp Mở Tệp</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Double click để mở thư mục, hộp quà & rương báu bí mật.</p>
+                    </div>
+
+                    <!-- Level 4 -->
+                    <div onclick="selectLevel(4)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-emerald-400 font-orbitron mb-1">MÀN 4</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-hand-back-fist text-emerald-400"></i> Kéo & Thả Fast</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Giữ chuột kéo thả vật thể phân loại đúng màu.</p>
+                    </div>
+
+                    <!-- Level 5 -->
+                    <div onclick="selectLevel(5)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-cyan-400 font-orbitron mb-1">MÀN 5</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-route text-cyan-400"></i> Mê Cung Laser</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Di chuyển con trỏ qua đường hẹp không chạm vách.</p>
+                    </div>
+
+                    <!-- Level 6 -->
+                    <div onclick="selectLevel(6)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-amber-400 font-orbitron mb-1">MÀN 6</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-cubes text-amber-400"></i> Bão Hỗn Hợp</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Kế thừa đủ các loại thao tác chuột xuất hiện dồn dập.</p>
+                    </div>
+
+                    <!-- Level 7 -->
+                    <div onclick="selectLevel(7)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-rose-400 font-orbitron mb-1">MÀN 7</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-rose-400"></i> Di Chuột Thu Gom</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Di chuột ăn sao năng lượng & né bom tự do.</p>
+                    </div>
+
+                    <!-- Level 8 -->
+                    <div onclick="selectLevel(8)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-indigo-400 font-orbitron mb-1">MÀN 8</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-puzzle-piece text-indigo-400"></i> Xếp Hình Kéo Thả</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Lắp ráp các mảnh ghép đúng ô vị trí bóng mờ.</p>
+                    </div>
+
+                    <!-- Level 9 -->
+                    <div onclick="selectLevel(9)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-teal-400 font-orbitron mb-1">MÀN 9</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-arrows-up-down text-teal-400"></i> Cuộn Chuột Master</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Sử dụng con lăn chuột cân bằng mức năng lượng.</p>
+                    </div>
+
+                    <!-- Level 10 -->
+                    <div onclick="selectLevel(10)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-orange-400 font-orbitron mb-1">MÀN 10</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-pen-nib text-orange-400"></i> Nối Điểm Chuột</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Giữ chuột rê vẽ liên tục nối liền các điểm số.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <button onclick="startCampaign()" class="px-8 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black font-orbitron tracking-wider rounded-2xl shadow-xl shadow-blue-600/30 hover:scale-105 transition transform">
+                        <i class="fa-solid fa-play mr-2"></i> BẮT ĐẦU CHẾ ĐỘ MÀN CHƠI (1->10)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over & Level Complete Overlay -->
+        <div id="modal-gameover" class="absolute inset-0 glass-panel bg-slate-950/95 z-30 hidden flex items-center justify-center p-6">
+            <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
+                <div id="go-icon-container" class="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-amber-500/20 text-amber-400 shadow-lg shadow-amber-500/10">
+                    <i id="go-icon" class="fa-solid fa-trophy text-4xl"></i>
+                </div>
+                <h2 id="go-title" class="text-3xl font-black font-orbitron text-white mb-1">HOÀN THÀNH MÀN!</h2>
+                <p id="go-subtitle" class="text-slate-400 text-xs mb-6">Bạn đã thể hiện phản xạ thao tác chuột tuyệt vời!</p>
+
+                <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800 space-y-3 mb-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Màn Hiện Tại:</span>
+                        <span id="go-level-name" class="text-sm font-bold font-orbitron text-purple-400">Màn 1</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Tổng Điểm Số:</span>
+                        <span id="go-score" class="text-2xl font-black font-orbitron text-blue-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Combo Cao Nhất:</span>
+                        <span id="go-max-combo" class="text-lg font-bold font-orbitron text-amber-400">x0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Độ Chính Xác:</span>
+                        <span id="go-accuracy" class="text-lg font-bold font-orbitron text-emerald-400">100%</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="showMenu()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition">
+                        Menu Chính
+                    </button>
+                    <button id="btn-next-level" onclick="nextLevel()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition">
+                        Màn Tiếp Theo <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.enabled = true;
+                this.initialized = false;
+                this.synth = null;
+                this.polySynth = null;
+            }
+
+            async init() {
+                if (this.initialized) return;
+                try {
+                    await Tone.start();
+                    this.synth = new Tone.Synth({
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+                    }).toDestination();
+                    
+                    this.polySynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 }
+                    }).toDestination();
+                    this.polySynth.volume.value = -6;
+
+                    this.initialized = true;
+                } catch (e) {
+                    console.log("Audio context trigger required.");
+                }
+            }
+
+            playPop(freq = 440) {
+                if (!this.enabled || !this.initialized) return;
+                try { this.synth.triggerAttackRelease(freq, '8n'); } catch(e){}
+            }
+
+            playSuccess() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["C5", "E5", "G5"], "16n", now);
+                } catch(e){}
+            }
+
+            playError() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["F3", "C3"], "8n", now);
+                } catch(e){}
+            }
+
+            playLevelUp() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+                } catch(e){}
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'MENU'; // MENU, PLAYING, GAMEOVER
+        let currentLevel = 1; // 1 to 10
+        
+        let score = 0;
+        let combo = 1;
+        let maxCombo = 1;
+        let timeLeft = 30;
+        let timerInterval = null;
+        let totalClicks = 0;
+        let successfulClicks = 0;
+
+        let mousePos = { x: 0, y: 0 };
+        let particles = [];
+        
+        // Level Specific State Data
+        let levelData = {};
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 4 + 2;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.03 + 0.015;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw(context) {
+                context.save();
+                context.globalAlpha = Math.max(0, this.alpha);
+                context.beginPath();
+                context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                context.fillStyle = this.color;
+                context.shadowColor = this.color;
+                context.shadowBlur = 10;
+                context.fill();
+                context.restore();
+            }
+        }
+
+        function createExplosion(x, y, color, count = 15) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        const LEVEL_CONFIGS = {
+            1: { name: "Màn 1: Nhấp Chuột Trái", desc: "Bấm chuột trái vào các mục tiêu di chuyển xuất hiện!", time: 25 },
+            2: { name: "Màn 2: Nhấp Chuột Phải", desc: "Sử dụng nút chuột phải bấm chính xác vào bia mục tiêu màu tím!", time: 25 },
+            3: { name: "Màn 3: Nháy Đúp Mở Tệp & Hộp Quà", desc: "Thực hành thao tác máy tính: Nhấp đúp (Double Click) để mở các thư mục & hộp quà!", time: 25 },
+            4: { name: "Màn 4: Kéo & Thả Phân Loại", desc: "Bấm giữ chuột để kéo các ô vuông màu vào đúng khu vực phân loại!", time: 30 },
+            5: { name: "Màn 5: Mê Cung Laser", desc: "Di chuyển con trỏ cẩn thận theo đường ống laser từ BẮT ĐẦU tới ĐÍCH!", time: 30 },
+            6: { name: "Màn 6: Bão Chuột Hỗn Hợp", desc: "Xuất hiện dồn dập: Chuột trái, Chuột phải, Nháy đúp & Giữ chuột!", time: 35 },
+            7: { name: "Màn 7: Di Chuột Thu Gom", desc: "Rê chuột ăn ngọc xanh và Né tránh hoàn toàn các quả cầu đỏ nổ!", time: 25 },
+            8: { name: "Màn 8: Xếp Hình Kéo Thả", desc: "Kéo các mảnh ghép hình học thả khớp vào các ô bóng mờ tương ứng!", time: 35 },
+            9: { name: "Màn 9: Cuộn Chuột Master", desc: "Dùng con lăn chuột (Mouse Wheel) để giữ thanh chỉ số trong vùng Xanh!", time: 25 },
+            10: { name: "Màn 10: Nối Điểm Chuột", desc: "Giữ chuột trái và rê vẽ đường nối lần lượt từ điểm 1 -> 8!", time: 30 }
+        };
+
+        function initLevel(lvl) {
+            currentLevel = lvl;
+            const config = LEVEL_CONFIGS[lvl];
+            timeLeft = config.time;
+            
+            document.getElementById('mode-title').innerText = config.name;
+            document.getElementById('mode-instruction').innerText = config.desc;
+            
+            const infoBanner = document.getElementById('mode-info');
+            infoBanner.style.opacity = '1';
+            infoBanner.style.transform = 'translate(-50%, 0)';
+
+            levelData = {}; // Clear state
+
+            switch(lvl) {
+                case 1: // Left Click Targets
+                    levelData.targets = [];
+                    break;
+                case 2: // Right Click Targets
+                    levelData.targets = [];
+                    break;
+                case 3: // Double Click Open Items
+                    initLevel3Folders();
+                    break;
+                case 4: // Drag & Drop
+                    initLevel4DragDrop();
+                    break;
+                case 5: // Maze Laser
+                    initLevel5Maze();
+                    break;
+                case 6: // Multi-Action
+                    levelData.targets = [];
+                    break;
+                case 7: // Sweeper
+                    initLevel7Sweeper();
+                    break;
+                case 8: // Puzzle
+                    initLevel8Puzzle();
+                    break;
+                case 9: // Scroll
+                    initLevel9Scroll();
+                    break;
+                case 10: // Connect Dots
+                    initLevel10Dots();
+                    break;
+            }
+        }
+
+        function initLevel3Folders() {
+            levelData.items = [];
+            spawnLevel3Items(6);
+        }
+
+        function spawnLevel3Items(count = 1) {
+            const types = [
+                { name: 'folder', label: 'THƯ MỤC', color: '#f59e0b', icon: '📁', openIcon: '📂' },
+                { name: 'gift', label: 'HỘP QUÀ', color: '#ec4899', icon: '🎁', openIcon: '🎉' },
+                { name: 'chest', label: 'RƯƠNG BÁU', color: '#8b5cf6', icon: '📦', openIcon: '💎' },
+                { name: 'file', label: 'TỆP TIN', color: '#3b82f6', icon: '📄', openIcon: '📜' }
+            ];
+
+            for (let i = 0; i < count; i++) {
+                const t = types[Math.floor(Math.random() * types.length)];
+                levelData.items.push({
+                    id: Math.random(),
+                    type: t.name,
+                    label: t.label,
+                    color: t.color,
+                    icon: t.icon,
+                    openIcon: t.openIcon,
+                    x: Math.random() * (canvas.width - 220) + 110,
+                    y: Math.random() * (canvas.height - 220) + 110,
+                    size: 70,
+                    isOpen: false,
+                    openTimer: 0
+                });
+            }
+        }
+
+        function updateLevel3(dt) {
+            if (!levelData.items) initLevel3Folders();
+
+            // Maintain active items on screen
+            const closedCount = levelData.items.filter(item => !item.isOpen).length;
+            if (closedCount < 5 && Math.random() < 0.05) {
+                spawnLevel3Items(1);
+            }
+
+            for (let i = levelData.items.length - 1; i >= 0; i--) {
+                const item = levelData.items[i];
+
+                ctx.save();
+                ctx.translate(item.x, item.y);
+
+                if (item.isOpen) {
+                    item.openTimer += dt;
+                    
+                    // Fade out animation upon opening
+                    const alpha = Math.max(0, 1 - item.openTimer * 1.8);
+                    ctx.globalAlpha = alpha;
+
+                    // Draw Opened State with glowing effect
+                    ctx.fillStyle = item.color;
+                    ctx.shadowColor = item.color;
+                    ctx.shadowBlur = 25;
+                    ctx.font = '38px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.openIcon, 0, -10);
+
+                    ctx.fillStyle = '#22c55e';
+                    ctx.font = 'bold 13px Orbitron';
+                    ctx.fillText('ĐÃ MỞ! +250', 0, 26);
+
+                    if (item.openTimer > 0.6) {
+                        levelData.items.splice(i, 1);
+                    }
+                } else {
+                    // Closed State - Hover & Interactive Highlight
+                    const dist = Math.hypot(mousePos.x - item.x, mousePos.y - item.y);
+                    const isHovered = dist < item.size / 2;
+
+                    // Draw Frame Container
+                    ctx.fillStyle = isHovered ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.85)';
+                    ctx.strokeStyle = isHovered ? item.color : 'rgba(255, 255, 255, 0.18)';
+                    ctx.lineWidth = isHovered ? 2.5 : 1.5;
+
+                    ctx.beginPath();
+                    if (ctx.roundRect) {
+                        ctx.roundRect(-item.size / 2, -item.size / 2, item.size, item.size + 16, 14);
+                    } else {
+                        ctx.rect(-item.size / 2, -item.size / 2, item.size, item.size + 16);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+
+                    if (isHovered) {
+                        ctx.shadowColor = item.color;
+                        ctx.shadowBlur = 18;
+                    }
+
+                    // Icon Display
+                    ctx.font = '32px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.icon, 0, -8);
+
+                    // Title Label
+                    ctx.fillStyle = isHovered ? '#ffffff' : '#cbd5e1';
+                    ctx.font = 'bold 10px Orbitron';
+                    ctx.fillText(item.label, 0, 22);
+
+                    // Instruction Badge
+                    ctx.fillStyle = item.color;
+                    ctx.font = 'bold 8px Orbitron';
+                    ctx.fillText('NHÁY ĐÚP', 0, 34);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function initLevel4DragDrop() {
+            levelData.items = [];
+            levelData.zones = [
+                { id: 'red', color: '#ef4444', label: 'Ô ĐỎ', x: canvas.width * 0.25, y: canvas.height * 0.75, radius: 45 },
+                { id: 'blue', color: '#3b82f6', label: 'Ô XANH', x: canvas.width * 0.5, y: canvas.height * 0.75, radius: 45 },
+                { id: 'green', color: '#10b981', label: 'Ô LỤC', x: canvas.width * 0.75, y: canvas.height * 0.75, radius: 45 }
+            ];
+            
+            const colors = ['red', 'blue', 'green'];
+            for (let i = 0; i < 6; i++) {
+                const type = colors[i % 3];
+                levelData.items.push({
+                    id: i,
+                    type: type,
+                    color: type === 'red' ? '#ef4444' : (type === 'blue' ? '#3b82f6' : '#10b981'),
+                    x: Math.random() * (canvas.width - 200) + 100,
+                    y: Math.random() * 150 + 100,
+                    radius: 30,
+                    isDragging: false,
+                    isDone: false
+                });
+            }
+        }
+
+        function initLevel5Maze() {
+            const startX = 100;
+            const startY = canvas.height / 2;
+            const endX = canvas.width - 100;
+            const endY = canvas.height / 2;
+
+            levelData.maze = {
+                points: [
+                    { x: startX, y: startY },
+                    { x: canvas.width * 0.3, y: canvas.height * 0.2 },
+                    { x: canvas.width * 0.5, y: canvas.height * 0.8 },
+                    { x: canvas.width * 0.7, y: canvas.height * 0.25 },
+                    { x: endX, y: endY }
+                ],
+                width: 55,
+                startX: startX, startY: startY,
+                endX: endX, endY: endY,
+                started: false
+            };
+        }
+
+        function initLevel7Sweeper() {
+            levelData.gems = [];
+            levelData.bombs = [];
+            for (let i = 0; i < 5; i++) {
+                levelData.bombs.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: 22,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6
+                });
+            }
+        }
+
+        function initLevel8Puzzle() {
+            levelData.pieces = [];
+            levelData.slots = [
+                { id: 1, shape: 'circle', x: canvas.width * 0.3, y: canvas.height * 0.6, radius: 35, filled: false },
+                { id: 2, shape: 'square', x: canvas.width * 0.5, y: canvas.height * 0.6, radius: 35, filled: false },
+                { id: 3, shape: 'triangle', x: canvas.width * 0.7, y: canvas.height * 0.6, radius: 35, filled: false }
+            ];
+
+            const shapes = ['circle', 'square', 'triangle'];
+            shapes.forEach((s, idx) => {
+                levelData.pieces.push({
+                    id: idx + 1,
+                    shape: s,
+                    x: canvas.width * 0.25 + idx * canvas.width * 0.25,
+                    y: canvas.height * 0.2,
+                    radius: 30,
+                    isDragging: false,
+                    isSnapped: false
+                });
+            });
+        }
+
+        function initLevel9Scroll() {
+            levelData.scrollVal = 50;
+            levelData.targetMin = 40;
+            levelData.targetMax = 60;
+            levelData.holdTime = 0;
+        }
+
+        function initLevel10Dots() {
+            levelData.dots = [];
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                const r = Math.min(canvas.width, canvas.height) * 0.3;
+                levelData.dots.push({
+                    id: i + 1,
+                    x: canvas.width / 2 + Math.cos(angle) * r,
+                    y: canvas.height / 2 + Math.sin(angle) * r,
+                    radius: 20,
+                    visited: false
+                });
+            }
+            levelData.currentDotIndex = 0;
+            levelData.isDrawing = false;
+        }
+
+        // Level 1: Left Click Targets
+        function updateLevel1(dt) {
+            if (levelData.targets.length < 5 && Math.random() < 0.06) {
+                levelData.targets.push({
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: Math.random() * 15 + 22,
+                    life: 3.0,
+                    maxLife: 3.0
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, t.life);
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#3b82f6';
+                ctx.shadowColor = '#3b82f6';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('NHẤP TRÁI', t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD();
+                    levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 2: Right Click Targets
+        function updateLevel2(dt) {
+            if (levelData.targets.length < 4 && Math.random() < 0.05) {
+                levelData.targets.push({
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: Math.random() * 15 + 25,
+                    life: 3.5
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#a855f7';
+                ctx.shadowColor = '#a855f7';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('CHUỘT PHẢI', t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD();
+                    levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 4: Drag & Drop Sorting
+        function updateLevel4(dt) {
+            // Draw Zones
+            levelData.zones.forEach(z => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                ctx.fill();
+                ctx.strokeStyle = z.color;
+                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = z.color;
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(z.label, z.x, z.y);
+                ctx.restore();
+            });
+
+            // Draw Draggables
+            let finished = true;
+            levelData.items.forEach(item => {
+                if (!item.isDone) finished = false;
+
+                if (item.isDragging) {
+                    item.x = mousePos.x;
+                    item.y = mousePos.y;
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                ctx.fillStyle = item.color;
+                ctx.shadowColor = item.color;
+                ctx.shadowBlur = item.isDragging ? 20 : 8;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            if (finished) {
+                addScore(1000, canvas.width/2, canvas.height/2);
+                sounds.playLevelUp();
+                initLevel4DragDrop();
+            }
+        }
+
+        // Level 5: Laser Maze
+        function updateLevel5(dt) {
+            const m = levelData.maze;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(m.points[0].x, m.points[0].y);
+            for (let i = 1; i < m.points.length; i++) ctx.lineTo(m.points[i].x, m.points[i].y);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = m.width;
+            ctx.strokeStyle = m.started ? 'rgba(6, 182, 212, 0.3)' : 'rgba(71, 85, 105, 0.3)';
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#06b6d4';
+            ctx.stroke();
+
+            // Start & End Zones
+            ctx.beginPath(); ctx.arc(m.startX, m.startY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#22c55e'; ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillText('BẮT ĐẦU', m.startX, m.startY + 4);
+
+            ctx.beginPath(); ctx.arc(m.endX, m.endY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#ec4899'; ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.fillText('ĐÍCH', m.endX, m.endY + 4);
+            ctx.restore();
+
+            const distStart = Math.hypot(mousePos.x - m.startX, mousePos.y - m.startY);
+            if (distStart < 30) m.started = true;
+
+            const distEnd = Math.hypot(mousePos.x - m.endX, mousePos.y - m.endY);
+            if (m.started && distEnd < 30) {
+                addScore(1500, m.endX, m.endY);
+                sounds.playLevelUp();
+                initLevel5Maze();
+            }
+        }
+
+        // Level 6: Multi-Action Combo
+        function updateLevel6(dt) {
+            if (levelData.targets.length < 5 && Math.random() < 0.07) {
+                const types = ['LEFT', 'RIGHT', 'DOUBLE'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                levelData.targets.push({
+                    type: type,
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: 28,
+                    life: 3.5
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                let color = '#3b82f6';
+                let label = 'TRÁI';
+                if (t.type === 'RIGHT') { color = '#a855f7'; label = 'PHẢI'; }
+                if (t.type === 'DOUBLE') { color = '#ec4899'; label = 'ĐÚP'; }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(label, t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD(); levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 7: Mouse Sweeper
+        function updateLevel7(dt) {
+            if (levelData.gems.length < 4 && Math.random() < 0.08) {
+                levelData.gems.push({
+                    x: Math.random() * (canvas.width - 100) + 50,
+                    y: Math.random() * (canvas.height - 100) + 50,
+                    radius: 15
+                });
+            }
+
+            // Draw Gems
+            for (let i = levelData.gems.length - 1; i >= 0; i--) {
+                const g = levelData.gems[i];
+                ctx.save();
+                ctx.beginPath(); ctx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 10; ctx.fill();
+                ctx.restore();
+
+                if (Math.hypot(mousePos.x - g.x, mousePos.y - g.y) < g.radius + 10) {
+                    addScore(100, g.x, g.y);
+                    sounds.playPop(600);
+                    createExplosion(g.x, g.y, '#10b981', 10);
+                    levelData.gems.splice(i, 1);
+                }
+            }
+
+            // Draw & Update Bombs
+            levelData.bombs.forEach(b => {
+                b.x += b.vx; b.y += b.vy;
+                if (b.x < b.radius || b.x > canvas.width - b.radius) b.vx *= -1;
+                if (b.y < b.radius || b.y > canvas.height - b.radius) b.vy *= -1;
+
+                ctx.save();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12; ctx.fill();
+                ctx.restore();
+
+                if (Math.hypot(mousePos.x - b.x, mousePos.y - b.y) < b.radius + 8) {
+                    combo = 1; updateHUD(); sounds.playError();
+                    createExplosion(mousePos.x, mousePos.y, '#ef4444', 8);
+                }
+            });
+        }
+
+        // Level 8: Puzzle Snap
+        function updateLevel8(dt) {
+            // Draw Slots
+            levelData.slots.forEach(s => {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                ctx.fillStyle = s.filled ? 'rgba(34, 197, 94, 0.3)' : 'rgba(30, 41, 59, 0.6)';
+                ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px Orbitron'; ctx.textAlign = 'center'; ctx.fillText(s.shape.toUpperCase(), s.x, s.y + 4);
+                ctx.restore();
+            });
+
+            // Draw Pieces
+            let allSnapped = true;
+            levelData.pieces.forEach(p => {
+                if (!p.isSnapped) allSnapped = false;
+
+                if (p.isDragging) {
+                    p.x = mousePos.x; p.y = mousePos.y;
+                }
+
+                ctx.save();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#6366f1'; ctx.shadowColor = '#6366f1'; ctx.shadowBlur = 12; ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillText(p.shape.toUpperCase(), p.x, p.y + 4);
+                ctx.restore();
+            });
+
+            if (allSnapped) {
+                addScore(1200, canvas.width/2, canvas.height/2);
+                sounds.playLevelUp();
+                initLevel8Puzzle();
+            }
+        }
+
+        // Level 9: Scroll Master
+        function updateLevel9(dt) {
+            levelData.targetMin += Math.sin(Date.now() * 0.003) * 0.2;
+            levelData.targetMax += Math.sin(Date.now() * 0.003) * 0.2;
+
+            const barW = 60; const barH = canvas.height * 0.6;
+            const barX = canvas.width / 2 - barW / 2; const barY = canvas.height * 0.2;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
+            ctx.fillRect(barX, barY, barW, barH); ctx.strokeRect(barX, barY, barW, barH);
+
+            // Target Zone
+            const topY = barY + barH * (1 - levelData.targetMax / 100);
+            const botY = barY + barH * (1 - levelData.targetMin / 100);
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.35)'; ctx.fillRect(barX + 4, topY, barW - 8, botY - topY);
+
+            // Current Indicator
+            const markerY = barY + barH * (1 - levelData.scrollVal / 100);
+            const inZone = levelData.scrollVal >= levelData.targetMin && levelData.scrollVal <= levelData.targetMax;
+
+            ctx.fillStyle = inZone ? '#14b8a6' : '#ef4444';
+            ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 15;
+            ctx.fillRect(barX - 8, markerY - 6, barW + 16, 12);
+            ctx.restore();
+
+            if (inZone) {
+                addScore(Math.floor(100 * dt), canvas.width/2 + 80, markerY);
+            }
+        }
+
+        // Level 10: Connect Dots
+        function updateLevel10(dt) {
+            // Draw Connect Lines
+            ctx.save();
+            ctx.strokeStyle = '#f97316'; ctx.lineWidth = 4; ctx.beginPath();
+            for (let i = 0; i < levelData.currentDotIndex; i++) {
+                const d = levelData.dots[i];
+                if (i === 0) ctx.moveTo(d.x, d.y);
+                else ctx.lineTo(d.x, d.y);
+            }
+            if (levelData.isDrawing && levelData.currentDotIndex > 0) {
+                ctx.lineTo(mousePos.x, mousePos.y);
+            }
+            ctx.stroke();
+
+            // Draw Dots
+            levelData.dots.forEach(d => {
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.radius, 0, Math.PI * 2);
+                ctx.fillStyle = d.visited ? '#22c55e' : '#f97316';
+                ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(d.id, d.x, d.y);
+            });
+            ctx.restore();
+        }
+
+        function drawCursorTrail() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+            ctx.shadowColor = '#3b82f6';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, 16, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mousePos = getCanvasPos(e);
+
+            // Level 10 Drawing Hit Check
+            if (currentLevel === 10 && gameState === 'PLAYING' && levelData.isDrawing) {
+                const nextDot = levelData.dots[levelData.currentDotIndex];
+                if (nextDot && Math.hypot(mousePos.x - nextDot.x, mousePos.y - nextDot.y) < nextDot.radius) {
+                    nextDot.visited = true;
+                    levelData.currentDotIndex++;
+                    addScore(200, nextDot.x, nextDot.y);
+                    sounds.playPop(700);
+
+                    if (levelData.currentDotIndex >= levelData.dots.length) {
+                        addScore(1500, canvas.width/2, canvas.height/2);
+                        sounds.playLevelUp();
+                        initLevel10Dots();
+                    }
+                }
+            }
+        });
+
+        // Left Click Handler
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            sounds.init();
+            totalClicks++;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 1) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(150, t.x, t.y);
+                        createExplosion(t.x, t.y, '#3b82f6', 15);
+                        sounds.playPop(520);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 4) {
+                levelData.items.forEach(item => {
+                    if (!item.isDone && Math.hypot(pos.x - item.x, pos.y - item.y) <= item.radius) {
+                        item.isDragging = true;
+                    }
+                });
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'LEFT' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(150, t.x, t.y);
+                        createExplosion(t.x, t.y, '#3b82f6', 15);
+                        sounds.playPop(520);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 8) {
+                levelData.pieces.forEach(p => {
+                    if (!p.isSnapped && Math.hypot(pos.x - p.x, pos.y - p.y) <= p.radius) {
+                        p.isDragging = true;
+                    }
+                });
+            } else if (currentLevel === 10) {
+                const firstDot = levelData.dots[0];
+                if (Math.hypot(pos.x - firstDot.x, pos.y - firstDot.y) <= firstDot.radius) {
+                    levelData.isDrawing = true;
+                    if (levelData.currentDotIndex === 0) {
+                        firstDot.visited = true;
+                        levelData.currentDotIndex = 1;
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (gameState !== 'PLAYING') return;
+
+            if (currentLevel === 4) {
+                levelData.items.forEach(item => {
+                    if (item.isDragging) {
+                        item.isDragging = false;
+                        levelData.zones.forEach(z => {
+                            if (z.id === item.type && Math.hypot(item.x - z.x, item.y - z.y) <= z.radius * 1.2) {
+                                item.x = z.x; item.y = z.y; item.isDone = true;
+                                successfulClicks++;
+                                addScore(300, z.x, z.y);
+                                sounds.playSuccess();
+                                createExplosion(z.x, z.y, item.color, 15);
+                            }
+                        });
+                    }
+                });
+            } else if (currentLevel === 8) {
+                levelData.pieces.forEach(p => {
+                    if (p.isDragging) {
+                        p.isDragging = false;
+                        levelData.slots.forEach(s => {
+                            if (s.shape === p.shape && !s.filled && Math.hypot(p.x - s.x, p.y - s.y) <= s.radius * 1.2) {
+                                p.x = s.x; p.y = s.y; p.isSnapped = true; s.filled = true;
+                                addScore(400, s.x, s.y);
+                                sounds.playSuccess();
+                            }
+                        });
+                    }
+                });
+            } else if (currentLevel === 10) {
+                levelData.isDrawing = false;
+            }
+        });
+
+        // Double Click Handler
+        canvas.addEventListener('dblclick', (e) => {
+            if (gameState !== 'PLAYING') return;
+            totalClicks += 2;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 3) {
+                if (!levelData.items) return;
+                for (let i = levelData.items.length - 1; i >= 0; i--) {
+                    const item = levelData.items[i];
+                    if (!item.isOpen && Math.hypot(pos.x - item.x, pos.y - item.y) <= item.size / 2 + 10) {
+                        item.isOpen = true;
+                        successfulClicks++;
+                        addScore(250, item.x, item.y);
+                        createExplosion(item.x, item.y, item.color, 20);
+                        sounds.playPop(720);
+                        setTimeout(() => sounds.playSuccess(), 60);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'DOUBLE' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(250, t.x, t.y);
+                        createExplosion(t.x, t.y, '#ec4899', 20);
+                        sounds.playPop(650);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Right Click Handler (Context Menu override)
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (gameState !== 'PLAYING') return;
+            totalClicks++;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 2) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(200, t.x, t.y);
+                        createExplosion(t.x, t.y, '#a855f7', 18);
+                        sounds.playPop(780);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'RIGHT' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(200, t.x, t.y);
+                        createExplosion(t.x, t.y, '#a855f7', 18);
+                        sounds.playPop(780);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Scroll Wheel Handler
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (gameState !== 'PLAYING' || currentLevel !== 9) return;
+
+            const delta = Math.sign(e.deltaY);
+            levelData.scrollVal = Math.max(0, Math.min(100, levelData.scrollVal - delta * 4));
+            sounds.playPop(300 + levelData.scrollVal * 3);
+        }, { passive: false });
+
+        function addScore(points, x, y) {
+            score += points * combo;
+            combo = Math.min(10, combo + 1);
+            if (combo > maxCombo) maxCombo = combo;
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-level').innerText = `${currentLevel}/10`;
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-combo').innerText = `x${combo}`;
+            document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+        }
+
+        function selectLevel(lvl) {
+            sounds.init();
+            gameState = 'PLAYING';
+            score = 0; combo = 1; maxCombo = 1;
+            totalClicks = 0; successfulClicks = 0;
+
+            document.getElementById('modal-menu').classList.add('hidden');
+            document.getElementById('modal-gameover').classList.add('hidden');
+
+            initLevel(lvl);
+            updateHUD();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateHUD();
+                if (timeLeft <= 0) completeLevel();
+            }, 1000);
+        }
+
+        function startCampaign() {
+            selectLevel(1);
+        }
+
+        function completeLevel() {
+            gameState = 'GAMEOVER';
+            clearInterval(timerInterval);
+
+            const accuracy = totalClicks > 0 ? Math.round((successfulClicks / totalClicks) * 100) : 100;
+
+            document.getElementById('go-level-name').innerText = `Màn ${currentLevel}: ${LEVEL_CONFIGS[currentLevel].name}`;
+            document.getElementById('go-score').innerText = score;
+            document.getElementById('go-max-combo').innerText = `x${maxCombo}`;
+            document.getElementById('go-accuracy').innerText = `${accuracy}%`;
+
+            const btnNext = document.getElementById('btn-next-level');
+            if (currentLevel < 10) {
+                btnNext.style.display = 'block';
+            } else {
+                btnNext.style.display = 'none';
+                document.getElementById('go-title').innerText = "BẬC THẦY CHUỘT!";
+                document.getElementById('go-subtitle').innerText = "Bạn đã chinh phục toàn bộ 10 màn chơi thao tác chuột xuất sắc!";
+            }
+
+            document.getElementById('modal-gameover').classList.remove('hidden');
+            sounds.playLevelUp();
+        }
+
+        function nextLevel() {
+            if (currentLevel < 10) selectLevel(currentLevel + 1);
+        }
+
+        function showMenu() {
+            gameState = 'MENU';
+            clearInterval(timerInterval);
+            document.getElementById('modal-gameover').classList.add('hidden');
+            document.getElementById('modal-menu').classList.remove('hidden');
+            document.getElementById('mode-info').style.opacity = '0';
+        }
+
+        function restartLevel() {
+            selectLevel(currentLevel);
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', restartLevel);
+        
+        const soundBtn = document.getElementById('btn-sound');
+        soundBtn.addEventListener('click', () => {
+            sounds.enabled = !sounds.enabled;
+            soundBtn.innerHTML = sounds.enabled ? 
+                '<i class="fa-solid fa-volume-high text-lg"></i>' : 
+                '<i class="fa-solid fa-volume-xmark text-lg text-rose-500"></i>';
+        });
+
+        function drawBackground() {
+            ctx.save();
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle background grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        let lastTime = performance.now();
+
+        function gameLoop(now = performance.now()) {
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            // Draw Background
+            drawBackground();
+
+            // Render Active Level
+            if (gameState === 'PLAYING') {
+                switch(currentLevel) {
+                    case 1: updateLevel1(dt); break;
+                    case 2: updateLevel2(dt); break;
+                    case 3: updateLevel3(dt); break;
+                    case 4: updateLevel4(dt); break;
+                    case 5: updateLevel5(dt); break;
+                    case 6: updateLevel6(dt); break;
+                    case 7: updateLevel7(dt); break;
+                    case 8: updateLevel8(dt); break;
+                    case 9: updateLevel9(dt); break;
+                    case 10: updateLevel10(dt); break;
+                }
+            }
+
+            // Update & Render Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Draw Trail / Cursor Glow
+            drawCursorTrail();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function() {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
